@@ -69,11 +69,9 @@ elif [[ "$1" == "cleanup" ]]; then
     fi
   done <<< "$(ls -1t . --hide "${STORFILE}")"
 elif [[ "$1" == "show" ]]; then
-  ls -lt
-elif [[ "$1" == "diff" ]]; then
   last_file="saved.wmctrl"
   while read -r file; do
-    echo -n "${file} "
+    echo -n "$(ls -l ${file}) "
     diff -y --suppress-common-lines <(cut -d\  -f1-6 "${last_file}" | sort) \
       <(cut -d\  -f1-6 "${file}" | sort) | wc -l
     last_file=${file}
@@ -81,7 +79,7 @@ elif [[ "$1" == "diff" ]]; then
 else
   readonly prog="$(basename $0)"
   cat <<EOM
-Usage: ${prog} <save|show|diff>
+Usage: ${prog} <save|show>
        ${prog} restore [filename (default "${STORFILE}"]
        ${prog} cleanup [number-of-backups-to-keep (default ${DEFAULT_NUM_TO_KEEP})]
 EOM
