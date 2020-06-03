@@ -36,13 +36,28 @@ readonly DEFAULT_NUM_TO_KEEP="5"
 
 if [[ "$1" == "save" ]]; then
   wmctrl -l -G | \
-    while read window_id desktop_id x_offset y_offset width height junk; do
+    while read window_id desktop_id x_offset y_offset width height title; do
     offset=($(xwininfo -id $window_id |grep Relative | awk '{print $NF}'|xargs))
+    # these are not actually windows, no need to save them.
+    fake_window_re=' (Desktop|nemo-desktop)$'
+    if [[ "${title}" =~ $fake_window_re ]]; then
+      continue
+    fi
+
     # Although I tried to get precise position using xwininfo, I had to subtract
     # 15px from y position (Mint Cinnamon). May differ on your window manager.
-    echo $window_id $desktop_id $((${x_offset}-${offset[0]})) \
-      $((${y_offset}-15-${offset[1]}-${offset[0]})) $width $height $junk >> \
-          ${TMPFILE}
+    wm_x_adjustment=1
+    wm_y_adjustment=29
+    non_managed_window_re=' - (Google\ Chrome|Chat)$'
+    if [[ "${title}" =~ $non_managed_window_re ]]; then
+      # chrome windows do not need position correction
+      wm_x_adjustment=0
+      wm_y_adjustment=0
+    fi
+    echo $window_id $desktop_id \
+      $((${x_offset}-${wm_x_adjustment}-${offset[0]})) \
+      $((${y_offset}-${wm_y_adjustment}-${offset[1]})) \
+      $width $height $title >> ${TMPFILE}
   done
   if [[ -f "${TMPFILE}" ]]; then
     # ignore the window title when comparing, and any ordering differences.
